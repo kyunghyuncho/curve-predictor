@@ -8,17 +8,22 @@ class LearningCurveForecaster:
     A non-parametric forecaster for learning curves using Gaussian Processes.
     Fits in log-log space to capture power-law dynamics (y = ax^-b).
     """
-    def __init__(self, nu: float = 1.5):
+    def __init__(self, nu: float = 1.5, kernel=None, optimizer="fmin_l_bfgs_b"):
         # Matern kernel (nu=1.5) is less smooth than RBF, 
         # making it better for noisy SGD dynamics.
-        self.kernel = (
-            C(1.0, (1e-3, 1e3)) * Matern(length_scale=1.0, length_scale_bounds=(1e-2, 1e2), nu=nu) + 
-            WhiteKernel(noise_level=0.1, noise_level_bounds=(1e-5, 1.0))
-        )
+        if kernel is None:
+            self.kernel = (
+                C(1.0, (1e-3, 1e3)) * Matern(length_scale=1.0, length_scale_bounds=(1e-2, 1e4), nu=nu) + 
+                WhiteKernel(noise_level=0.1, noise_level_bounds=(1e-5, 1.0))
+            )
+        else:
+            self.kernel = kernel
+
         self.model = GaussianProcessRegressor(
             kernel=self.kernel, 
             n_restarts_optimizer=10,
-            alpha=0.0
+            alpha=0.0,
+            optimizer=optimizer
         )
         self.is_fitted = False
 
